@@ -119,8 +119,16 @@ def start_game(matrix_len, iterations, speed, graphic):
 
 
 def usage():
-    print sys.argv[0] + ' -l <matrix_len> -i <iterations> -s <speed>'
+    print sys.argv[0] + \
+        ' -l <matrix_len> -i <iterations> -s <speed> -g (optional graphic)'
     sys.exit()
+
+
+def intOrFload(s):
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
 
 
 def main(argv):
@@ -143,7 +151,7 @@ def main(argv):
         elif opt == '-i':
             iterations = int(arg)
         elif opt == '-s':
-            speed = int(arg)
+            speed = intOrFload(arg)
         elif opt == '-g':
             graphic = True
         else:
