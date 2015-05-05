@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import pygame
 from random import randint
 from time import sleep
 from os import system
@@ -62,7 +63,38 @@ def printWorld(matrix):
     print output
 
 
-def start_game(matrix_len, iterations, speed):
+def pygameWorld(matrix):
+    blocksize = 16
+    width = len(matrix[0]) * blocksize
+    height = len(matrix) * blocksize
+    display = (width, height)
+    green = (0, 255, 0)
+
+    pygame.init()
+    pygame.display.set_caption("The game of life")
+    screen = pygame.display.set_mode(display, 0, 32)
+
+    x = y = 0
+    for row in matrix:
+        for item in row:
+            screen.fill(
+                (green[0]*item/1, green[1]*item/1, green[2]*item/1),
+                (x, y, blocksize - 2, blocksize - 2))
+            y += blocksize
+        x += blocksize
+        y = 0
+    pygame.display.update()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            return
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                pygame.quit()
+                sys.exit()
+                return
+
+
+def start_game(matrix_len, iterations, speed, graphic):
     matrix = [
         [randint(0, 1) for i in xrange(matrix_len)] for i in xrange(matrix_len)
     ]
@@ -70,7 +102,10 @@ def start_game(matrix_len, iterations, speed):
     print 'Press Ctrl+C'
     while iterations > 0:
         system('clear')
-        printWorld(matrix)
+        if graphic:
+            pygameWorld(matrix)
+        else:
+            printWorld(matrix)
         matrix, current_matrix = newStep(matrix, matrix_len)
         if matrix == current_matrix:
             print "\nGame over :D\nRestarting in 5 sec..."
@@ -83,34 +118,39 @@ def start_game(matrix_len, iterations, speed):
         iterations -= 1
 
 
-def print_help():
+def usage():
     print sys.argv[0] + ' -l <matrix_len> -i <iterations> -s <speed>'
+    sys.exit()
 
 
 def main(argv):
     matrix_len = 8
     iterations = 1000
     speed = 0.3
+    graphic = False
 
     try:
-        opts, args = getopt.getopt(argv, "l:i:s:")
+        opts, args = getopt.getopt(argv, "hl:i:s:g")
+        if not opts:
+            usage()
     except getopt.GetoptError:
-        print_help()
-        sys.exit(2)
+        usage()
     for opt, arg in opts:
         if opt == '-h':
-            print_help()
-            sys.exit()
-        elif opt in ("-l"):
+            usage()
+        elif opt == '-l':
             matrix_len = int(arg)
-        elif opt in ("-i"):
-            iterations = arg
-        elif opt in ("-s"):
-            speed = arg
+        elif opt == '-i':
+            iterations = int(arg)
+        elif opt == '-s':
+            speed = int(arg)
+        elif opt == '-g':
+            graphic = True
+        else:
+            usage()
 
-        start_game(matrix_len, iterations, speed)
+    start_game(matrix_len, iterations, speed, graphic)
 
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    print_help()
