@@ -30,10 +30,10 @@ def find_neighbors(matrix, x, y, dist=1):
     return counter, neighbors
 
 
-def newStep(current_matrix, matrix_len):
+def newStep(current_matrix):
     new_matrix = deepcopy(current_matrix)
-    for x in range(0, matrix_len):
-        for y in range(0, matrix_len):
+    for x in range(0, len(new_matrix)):
+        for y in range(0, len(new_matrix)):
             me = new_matrix[x][y]
             neighbors = find_neighbors(current_matrix, x, y)
             if me == 1:
@@ -106,7 +106,7 @@ def start_game(matrix_len, iterations, speed, graphic):
             pygameWorld(matrix)
         else:
             printWorld(matrix)
-        matrix, current_matrix = newStep(matrix, matrix_len)
+        matrix, current_matrix = newStep(matrix)
         if matrix == current_matrix:
             print "\nGame over :D\nRestarting in 5 sec..."
             sleep(5)
