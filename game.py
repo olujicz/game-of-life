@@ -8,11 +8,6 @@ import signal
 import getopt
 
 
-def signal_handler(signal, frame):
-    print '\nYou pressed Ctrl+C!'
-    sys.exit(0)
-
-
 def find_neighbors(matrix, x, y, dist=1):
     counter = 0
     me = matrix[x][y]
@@ -29,96 +24,125 @@ def find_neighbors(matrix, x, y, dist=1):
     return counter, neighbors
 
 
-def newStep(current_matrix):
-    new_matrix = deepcopy(current_matrix)
-    for x in range(0, len(new_matrix)):
-        for y in range(0, len(new_matrix)):
-            me = new_matrix[x][y]
-            neighbors = find_neighbors(current_matrix, x, y)
-            if me == 1:
-                if neighbors[0] < 2:
-                    me = 0
-                elif neighbors[0] in range(2, 3):
-                    me = 1
-                elif neighbors[0] > 3:
-                    me = 0
-            else:
-                if neighbors[0] == 3:
-                    me = 1
-            new_matrix[x][y] = me
+class Matrix:
+    def __init__(self, matrix_len):
+        self.matrix_len = matrix_len
+        self.matrix = [
+            [randint(0, 1) for i in xrange(self.matrix_len)]
+            for i in xrange(self.matrix_len)
+        ]
 
-    return new_matrix, current_matrix
+    def get(self):
+        return self.matrix
 
-
-def printWorld(matrix):
-    output = ""
-    for row in matrix:
-        for cell in row:
-            if cell == 1:
-                output += " O"
-            else:
-                output += " ."
-        output += '\n'
-    print output
+    def printWorld(self):
+        output = ""
+        for row in self.matrix:
+            for cell in row:
+                if cell == 1:
+                    output += " O"
+                else:
+                    output += " ."
+            output += '\n'
+        print output
 
 
-def pygameWorld(matrix):
+class MatrixFuture(Matrix):
+    def __init__(self, matrix):
+        self.current_matrix = matrix
+        self.matrix = deepcopy(self.current_matrix)
+        for x in range(0, len(self.matrix)):
+            for y in range(0, len(self.matrix)):
+                me = self.matrix[x][y]
+                neighbors = find_neighbors(self.current_matrix, x, y)
+                if me == 0:
+                    if neighbors[0] == 3:
+                        me = 1
+                else:
+                    if neighbors[0] < 2:
+                        me = 0
+                    elif neighbors[0] in range(2, 3):
+                        me = 1
+                    elif neighbors[0] > 3:
+                        me = 0
+
+                self.matrix[x][y] = me
+
+
+class PygameWorld:
     try:
-        import pygame
+        pygame = __import__('pygame')
     except ImportError:
         print "For graphic mode you need pygame module."
         sys.exit()
 
-    blocksize = 16
-    width = len(matrix[0]) * blocksize
-    height = len(matrix) * blocksize
-    display = (width, height)
-    green = (0, 255, 0)
+    def __init__(self, matrix):
+        self.matrix = matrix
 
-    pygame.init()
-    pygame.display.set_caption("The game of life")
-    screen = pygame.display.set_mode(display, 0, 32)
+        self.blocksize = 10
+        width = len(matrix[0]) * self.blocksize
+        height = len(matrix) * self.blocksize
+        display = (width, height)
+        self.green = (0, 255, 0)
 
-    x = y = 0
-    for row in matrix:
-        for item in row:
-            screen.fill(
-                (green[0]*item/1, green[1]*item/1, green[2]*item/1),
-                (x, y, blocksize - 2, blocksize - 2))
-            y += blocksize
-        x += blocksize
-        y = 0
-    pygame.display.update()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            return
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                pygame.quit()
+        self.pygame.init()
+        self.pygame.display.set_caption("The game of life")
+        self.screen = self.pygame.display.set_mode(display, 0, 32)
+
+    def show(self, matrix):
+        self.matrix = matrix
+        status = False
+        x = y = 0
+        for row in self.matrix:
+            for item in row:
+                self.screen.fill(
+                    (self.green[0]*item/1,
+                     self.green[1]*item/1,
+                     self.green[2]*item/1),
+                    (x, y, self.blocksize - 2, self.blocksize - 2))
+                y += self.blocksize
+            x += self.blocksize
+            y = 0
+        for event in self.pygame.event.get():
+            if event.type == self.pygame.QUIT:
                 sys.exit()
-                return
+            elif event.type == self.pygame.KEYDOWN:
+                if event.key == self.pygame.K_ESCAPE:
+                    self.pygame.quit()
+                    sys.exit()
+                elif event.key == self.pygame.K_SPACE:
+                    status = True
+        self.pygame.display.update()
+        return status
+
+
+def signal_handler(signal, frame):
+    print '\nYou pressed Ctrl+C!'
+    sys.exit(0)
 
 
 def start_game(matrix_len, iterations, speed, graphic):
-    matrix = [
-        [randint(0, 1) for i in xrange(matrix_len)] for i in xrange(matrix_len)
-    ]
+    matrix = Matrix(matrix_len)
     signal.signal(signal.SIGINT, signal_handler)
-    print 'Press Ctrl+C'
+    if graphic:
+        pyWorld = PygameWorld(matrix.get())
+        print "Press Escape to close."
+        print "Press Space to reset."
     while iterations > 0:
-        system('clear')
         if graphic:
-            pygameWorld(matrix)
+            state = pyWorld.show(matrix.get())
+            if state:
+                matrix = Matrix(matrix_len)
         else:
-            printWorld(matrix)
-        matrix, current_matrix = newStep(matrix)
-        if matrix == current_matrix:
+            system('clear')
+            matrix.printWorld()
+        matrix_future = MatrixFuture(matrix=matrix.get())
+        if matrix.get() == matrix_future.get():
             print "\nGame over :D\nRestarting in 5 sec..."
             sleep(5)
-            matrix = [
-                [randint(0, 1) for i in xrange(matrix_len)]
-                for i in xrange(matrix_len)
-            ]
+            matrix = Matrix(matrix_len)
+        else:
+            matrix = matrix_future
         sleep(speed)
         iterations -= 1
 
@@ -163,7 +187,6 @@ def main(argv):
             usage()
 
     start_game(matrix_len, iterations, speed, graphic)
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])
