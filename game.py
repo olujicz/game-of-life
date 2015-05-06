@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import pygame
 from random import randint
 from time import sleep
 from os import system
@@ -64,6 +63,12 @@ def printWorld(matrix):
 
 
 def pygameWorld(matrix):
+    try:
+        import pygame
+    except ImportError:
+        print "For graphic mode you need pygame module."
+        sys.exit()
+
     blocksize = 16
     width = len(matrix[0]) * blocksize
     height = len(matrix) * blocksize
