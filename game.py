@@ -35,7 +35,7 @@ def newStep(current_matrix, matrix_len):
     for x in range(0, matrix_len):
         for y in range(0, matrix_len):
             me = new_matrix[x][y]
-            neighbors = find_neighbors(new_matrix, x, y)
+            neighbors = find_neighbors(current_matrix, x, y)
             if me == 1:
                 if neighbors[0] < 2:
                     me = 0
